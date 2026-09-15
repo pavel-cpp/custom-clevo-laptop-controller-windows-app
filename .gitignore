@@ -3,6 +3,9 @@
 # User specific
 **/.idea/**
 
+/cmake-build*
+CMakePresets.json
+
 *.suo
 *.user
 .vs/
