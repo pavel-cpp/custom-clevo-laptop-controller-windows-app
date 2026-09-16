@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 200 200" width="200" height="200"
+     fill-rule="evenodd" clip-rule="evenodd"
+     style="shape-rendering:geometricPrecision;image-rendering:optimizeQuality">
+  <defs>
+    <!-- One light direction for the whole badge: lit from the top-left,
+         falling off to the deep accent blue at the bottom-right. -->
+    <linearGradient id="ring" gradientUnits="userSpaceOnUse" x1="8" y1="8" x2="165" y2="185">
+      <stop offset="0" stop-color="#86D8FF"/>
+      <stop offset="1" stop-color="#1C79C8"/>
+    </linearGradient>
+    <linearGradient id="core" gradientUnits="userSpaceOnUse" x1="30" y1="32" x2="142" y2="161">
+      <stop offset="0" stop-color="#4CC2FF"/>
+      <stop offset="1" stop-color="#0067C0"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(13.5 3.5)">
+    <path fill="url(#ring)" d="M97 3l65 37c7,4 11,11 11,19l0 75c0,8 -4,15 -11,19l-65 37c-7,4 -15,4 -22,0l-64 -37c-7,-4 -11,-11 -11,-19l0 -75c0,-8 4,-15 11,-19l64 -37c7,-4 15,-4 22,0zm-4 17l56 32c5,3 7,7 7,12l0 65c0,5 -2,9 -7,12l-56 32c-4,2 -9,2 -13,0l-56 -32c-5,-3 -7,-7 -7,-12l0 -65c0,-5 2,-9 7,-12l56 -32c4,-3 9,-3 13,0z"/>
+    <polygon fill="url(#core)" points="86,32 142,64 142,129 86,161 30,129 30,64"/>
+  </g>
+</svg>
