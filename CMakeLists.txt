@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 project(ControlCenter LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
@@ -12,11 +12,23 @@ qt_standard_project_setup(REQUIRES 6.5)
 
 qt_policy(SET QTP0004 NEW)
 
+set(CLEVO_SDK_BUILD_SHARED OFF CACHE BOOL "Build ClevoCommunitySDK as a DLL")
+add_subdirectory(external/clevo-community-sdk)
+
 qt_add_executable(ControlCenter WIN32
         src/main.cpp
         src/WinChrome.h
         src/WinChrome.cpp
         src/Theme.h
+        src/services/ServiceSupport.h
+        src/services/DeviceService.h
+        src/services/DeviceService.cpp
+        src/services/PowerService.h
+        src/services/PowerService.cpp
+        src/services/KeyboardService.h
+        src/services/KeyboardService.cpp
+        src/services/FanService.h
+        src/services/FanService.cpp
 )
 
 if(WIN32)
@@ -44,6 +56,7 @@ qt_add_qml_module(ControlCenter
         qml/components/HueSlider.qml
         qml/components/FanCurveChart.qml
         qml/components/ResizeBorders.qml
+        qml/components/NumberField.qml
         qml/components/icons/IconPerformance.qml
         qml/components/icons/IconKeyboard.qml
         qml/components/icons/IconFan.qml
@@ -69,11 +82,14 @@ target_link_libraries(ControlCenter
         Qt6::Quick
         Qt6::QuickControls2
         Qt6::Svg
+        ClevoCommunitySDK::ClevoCommunitySDK
 )
 
 if(WIN32)
     target_link_libraries(ControlCenter PRIVATE dwmapi)
 endif()
+
+clevo_sdk_deploy_runtime(ControlCenter INSTALL_DESTINATION .)
 
 qt_import_qml_plugins(ControlCenter)
 

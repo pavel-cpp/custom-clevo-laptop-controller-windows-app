@@ -1,10 +1,13 @@
 import QtQuick
 import ControlCenter
 
+// Controlled switch: shows `checked` and only requests a change through
+// `toggled`, so it never drifts from the state it is bound to.
 Item {
     id: root
     width: 40
     height: 20
+    opacity: enabled ? 1 : 0.45
 
     property bool checked: false
     signal toggled(bool checked)
@@ -32,9 +35,6 @@ Item {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: {
-            root.checked = !root.checked
-            root.toggled(root.checked)
-        }
+        onClicked: root.toggled(!root.checked)
     }
 }

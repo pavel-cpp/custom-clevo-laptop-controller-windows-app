@@ -5,23 +5,13 @@ Item {
     id: root
     implicitHeight: content.implicitHeight
 
-    property bool bootEffect: false
-    property bool effectsActive: true
-    property bool colorActive: true
-    property bool sleepActive: true
+    // Effect highlighted in the list; it runs only once applied.
+    property int selectedEffect: Math.max(0, KeyboardService.activeEffect)
 
-    property int effectIndex: 6
-    readonly property var effectNames: [
-        qsTr("Breathing (Driver)"), qsTr("Cycle (Driver)"), qsTr("Wave (Driver)"),
-        qsTr("Dance (Driver)"), qsTr("Tempo (Driver)"), qsTr("Flash (Driver)"),
-        qsTr("Breathing (Software)"), qsTr("Cycle (Software)"), qsTr("Wave (Software)"),
-        qsTr("Spectrum (Software)")
-    ]
-
-    property real hue: 333
-    property real saturation: 57
-    property real hsvValue: 73
-    property int brightness: 175
+    // The picker edits HSV; every change is pushed to the keyboard as RGB.
+    property real hue: 0
+    property real saturation: 0
+    property real hsvValue: 100
 
     readonly property color previewColor: Qt.hsva(hue / 360, saturation / 100, hsvValue / 100, 1)
     readonly property int rr: Math.round(previewColor.r * 255)
@@ -34,10 +24,40 @@ Item {
     }
     readonly property string hexString: "#" + hex2(rr) + hex2(gg) + hex2(bb)
 
+    // Sleep timer draft, applied with the Apply button.
+    property int sleepHours: 0
+    property int sleepMinutes: 10
+    property int sleepSecondsPart: 0
+    readonly property int draftSleepSeconds: sleepHours * 3600 + sleepMinutes * 60 + sleepSecondsPart
+    property string sleepError: ""
+
+    function pushColor() {
+        KeyboardService.setColor(root.previewColor)
+    }
+
+    function applySleep(enabled) {
+        root.sleepError = KeyboardService.applySleepTimer(enabled, root.draftSleepSeconds)
+    }
+
+    Component.onCompleted: {
+        const c = KeyboardService.color
+        root.hue = Math.max(0, c.hsvHue) * 360
+        root.saturation = c.hsvSaturation * 100
+        root.hsvValue = c.hsvValue * 100
+
+        if (KeyboardService.sleepSeconds > 0) {
+            const total = KeyboardService.sleepSeconds
+            root.sleepHours = Math.floor(total / 3600)
+            root.sleepMinutes = Math.floor(total / 60) % 60
+            root.sleepSecondsPart = total % 60
+        }
+    }
+
     Column {
         id: content
         width: parent.width
         spacing: 0
+        enabled: KeyboardService.available
 
         Row {
             width: parent.width
@@ -66,8 +86,8 @@ Item {
                 anchors.topMargin: 8
                 spacing: 10
                 ToggleSwitch {
-                    checked: root.bootEffect
-                    onToggled: (v) => root.bootEffect = v
+                    checked: KeyboardService.bootEffect
+                    onToggled: (v) => KeyboardService.setBootEffect(v)
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -91,14 +111,14 @@ Item {
             // ---- Effects ------------------------------------------------
             Rectangle {
                 width: 288
-                height: Math.max(fanEffectsCol.implicitHeight + 32, colorPanel.height)
+                height: Math.max(effectsCol.implicitHeight + 32, colorPanel.height)
                 radius: Theme.radius
                 color: Theme.panelBg
                 border.width: 1
                 border.color: Theme.panelBorder
 
                 Column {
-                    id: fanEffectsCol
+                    id: effectsCol
                     x: 16; y: 16
                     width: parent.width - 32
                     spacing: 12
@@ -116,14 +136,14 @@ Item {
                             font.family: Theme.fontFamily
                         }
                         Row {
-                            id: effectsHeader
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 8
                             ToggleSwitch {
                                 anchors.verticalCenter: parent.verticalCenter
-                                checked: root.effectsActive
-                                onToggled: (v) => root.effectsActive = v
+                                checked: KeyboardService.activeEffect >= 0
+                                onToggled: (v) => v ? KeyboardService.applyEffect(root.selectedEffect)
+                                                    : KeyboardService.clearEffect()
                             }
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
@@ -140,7 +160,7 @@ Item {
                         spacing: 2
 
                         Repeater {
-                            model: root.effectNames
+                            model: KeyboardService.effectNames
                             delegate: Item {
                                 width: parent.width
                                 height: 34
@@ -148,14 +168,15 @@ Item {
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: Theme.radiusSm
-                                    color: index === root.effectIndex ? Theme.selectedBg
-                                                                       : (fxMouse.containsMouse ? Theme.hoverBg : "transparent")
+                                    color: index === root.selectedEffect ? Theme.selectedBg
+                                                                         : (fxMouse.containsMouse ? Theme.hoverBg : "transparent")
                                 }
+                                // The accent bar marks the effect that is actually running.
                                 Rectangle {
                                     x: 0; y: 9
                                     width: 3; height: 16; radius: 2
                                     color: Theme.accent
-                                    opacity: index === root.effectIndex ? 1 : 0
+                                    opacity: index === KeyboardService.activeEffect ? 1 : 0
                                 }
                                 Text {
                                     anchors.left: parent.left
@@ -171,7 +192,8 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.effectIndex = index
+                                    onClicked: root.selectedEffect = index
+                                    onDoubleClicked: KeyboardService.applyEffect(index)
                                 }
                             }
                         }
@@ -195,6 +217,7 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onClicked: KeyboardService.applyEffect(root.selectedEffect)
                         }
                     }
                 }
@@ -229,18 +252,17 @@ Item {
                             font.family: Theme.fontFamily
                         }
                         Row {
-                            id: colorHeader
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 8
                             ToggleSwitch {
                                 anchors.verticalCenter: parent.verticalCenter
-                                checked: root.colorActive
-                                onToggled: (v) => root.colorActive = v
+                                checked: KeyboardService.enabled
+                                onToggled: (v) => KeyboardService.setEnabled(v)
                             }
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: qsTr("Active")
+                                text: qsTr("Backlight")
                                 color: Theme.textDim
                                 font.pixelSize: 12
                                 font.family: Theme.fontFamily
@@ -257,13 +279,20 @@ Item {
                             hue: root.hue
                             saturation: root.saturation
                             value: root.hsvValue
-                            onChanged: (s, v) => { root.saturation = s; root.hsvValue = v }
+                            onChanged: (s, v) => {
+                                root.saturation = s
+                                root.hsvValue = v
+                                root.pushColor()
+                            }
                         }
                         HueSlider {
                             width: 20
                             height: 184
                             hue: root.hue
-                            onChanged: (h) => root.hue = h
+                            onChanged: (h) => {
+                                root.hue = h
+                                root.pushColor()
+                            }
                         }
                     }
 
@@ -274,37 +303,24 @@ Item {
                         columnSpacing: 10
                         readonly property real fieldWidth: (width - columnSpacing * 2) / 3
 
-                        Column {
-                            spacing: 5
-                            Text { text: "R"; color: Theme.textMuted; font.pixelSize: 11; font.family: Theme.fontFamily }
-                            Rectangle {
-                                width: rgbGrid.fieldWidth; height: 32; radius: Theme.radiusSm
-                                color: Theme.fieldBg
-                                border.width: 1; border.color: Theme.fieldBorder
-                                Text { anchors.left: parent.left; anchors.leftMargin: 10; anchors.verticalCenter: parent.verticalCenter
-                                       text: root.rr; color: Theme.textPrimary; font.pixelSize: 13; font.family: Theme.fontFamily }
-                            }
-                        }
-                        Column {
-                            spacing: 5
-                            Text { text: "G"; color: Theme.textMuted; font.pixelSize: 11; font.family: Theme.fontFamily }
-                            Rectangle {
-                                width: rgbGrid.fieldWidth; height: 32; radius: Theme.radiusSm
-                                color: Theme.fieldBg
-                                border.width: 1; border.color: Theme.fieldBorder
-                                Text { anchors.left: parent.left; anchors.leftMargin: 10; anchors.verticalCenter: parent.verticalCenter
-                                       text: root.gg; color: Theme.textPrimary; font.pixelSize: 13; font.family: Theme.fontFamily }
-                            }
-                        }
-                        Column {
-                            spacing: 5
-                            Text { text: "B"; color: Theme.textMuted; font.pixelSize: 11; font.family: Theme.fontFamily }
-                            Rectangle {
-                                width: rgbGrid.fieldWidth; height: 32; radius: Theme.radiusSm
-                                color: Theme.fieldBg
-                                border.width: 1; border.color: Theme.fieldBorder
-                                Text { anchors.left: parent.left; anchors.leftMargin: 10; anchors.verticalCenter: parent.verticalCenter
-                                       text: root.bb; color: Theme.textPrimary; font.pixelSize: 13; font.family: Theme.fontFamily }
+                        Repeater {
+                            model: [
+                                { label: "R", value: root.rr },
+                                { label: "G", value: root.gg },
+                                { label: "B", value: root.bb }
+                            ]
+                            delegate: Column {
+                                spacing: 5
+                                Text { text: modelData.label; color: Theme.textMuted; font.pixelSize: 11; font.family: Theme.fontFamily }
+                                Rectangle {
+                                    width: rgbGrid.fieldWidth; height: 32; radius: Theme.radiusSm
+                                    color: Theme.fieldBg
+                                    border.width: 1; border.color: Theme.fieldBorder
+                                    Text {
+                                        anchors.left: parent.left; anchors.leftMargin: 10; anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.value; color: Theme.textPrimary; font.pixelSize: 13; font.family: Theme.fontFamily
+                                    }
+                                }
                             }
                         }
                     }
@@ -323,14 +339,14 @@ Item {
                             width: parent.width - 76 - 40
                             anchors.verticalCenter: parent.verticalCenter
                             from: 0; to: 255
-                            value: root.brightness
-                            onMoved: (v) => root.brightness = Math.round(v)
+                            value: KeyboardService.brightness
+                            onMoved: (v) => KeyboardService.setBrightness(Math.round(v))
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 32
                             horizontalAlignment: Text.AlignRight
-                            text: root.brightness
+                            text: KeyboardService.brightness
                             color: Theme.textPrimary
                             font.pixelSize: 12
                             font.family: Theme.fontFamily
@@ -387,8 +403,8 @@ Item {
                     Row {
                         spacing: 8
                         ToggleSwitch {
-                            checked: root.sleepActive
-                            onToggled: (v) => root.sleepActive = v
+                            checked: KeyboardService.sleepEnabled
+                            onToggled: (v) => root.applySleep(v)
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
@@ -411,28 +427,31 @@ Item {
                         Column {
                             spacing: 5
                             Text { text: qsTr("Hours"); color: Theme.textMuted; font.pixelSize: 11; font.family: Theme.fontFamily }
-                            Rectangle {
-                                width: hmsGrid.fieldWidth; height: 38; radius: Theme.radiusSm
-                                color: Theme.fieldBg; border.width: 1; border.color: Theme.fieldBorder
-                                Text { anchors.centerIn: parent; text: "0"; color: Theme.textPrimary; font.pixelSize: 15; font.family: Theme.fontFamily }
+                            NumberField {
+                                width: hmsGrid.fieldWidth
+                                maximum: 18
+                                value: root.sleepHours
+                                onEdited: (v) => root.sleepHours = v
                             }
                         }
                         Column {
                             spacing: 5
                             Text { text: qsTr("Minutes"); color: Theme.textMuted; font.pixelSize: 11; font.family: Theme.fontFamily }
-                            Rectangle {
-                                width: hmsGrid.fieldWidth; height: 38; radius: Theme.radiusSm
-                                color: Theme.fieldBg; border.width: 1; border.color: Theme.fieldBorder
-                                Text { anchors.centerIn: parent; text: "10"; color: Theme.textPrimary; font.pixelSize: 15; font.family: Theme.fontFamily }
+                            NumberField {
+                                width: hmsGrid.fieldWidth
+                                maximum: 59
+                                value: root.sleepMinutes
+                                onEdited: (v) => root.sleepMinutes = v
                             }
                         }
                         Column {
                             spacing: 5
                             Text { text: qsTr("Seconds"); color: Theme.textMuted; font.pixelSize: 11; font.family: Theme.fontFamily }
-                            Rectangle {
-                                width: hmsGrid.fieldWidth; height: 38; radius: Theme.radiusSm
-                                color: Theme.fieldBg; border.width: 1; border.color: Theme.fieldBorder
-                                Text { anchors.centerIn: parent; text: "0"; color: Theme.textPrimary; font.pixelSize: 15; font.family: Theme.fontFamily }
+                            NumberField {
+                                width: hmsGrid.fieldWidth
+                                maximum: 59
+                                value: root.sleepSecondsPart
+                                onEdited: (v) => root.sleepSecondsPart = v
                             }
                         }
                     }
@@ -456,7 +475,18 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onClicked: root.applySleep(true)
                         }
+                    }
+
+                    Text {
+                        width: parent.width
+                        visible: root.sleepError.length > 0
+                        text: root.sleepError
+                        color: Theme.errorText
+                        font.pixelSize: 12
+                        font.family: Theme.fontFamily
+                        wrapMode: Text.WordWrap
                     }
 
                     Text {

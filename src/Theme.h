@@ -18,6 +18,9 @@ class Theme : public QObject
     Q_PROPERTY(QColor accentHover READ accentHover CONSTANT)
     Q_PROPERTY(QColor accentText READ accentText CONSTANT)
     Q_PROPERTY(QColor closeHover READ closeHover CONSTANT)
+    Q_PROPERTY(QColor errorText READ errorText CONSTANT)
+    Q_PROPERTY(QColor warningBg READ warningBg CONSTANT)
+    Q_PROPERTY(QColor warningBorder READ warningBorder CONSTANT)
 
     Q_PROPERTY(QColor textPrimary READ textPrimary CONSTANT)
     Q_PROPERTY(QColor textSecondary READ textSecondary CONSTANT)
@@ -59,6 +62,9 @@ public:
     QColor accentHover() const { return QColor("#63cdff"); }
     QColor accentText() const { return QColor("#10222e"); }
     QColor closeHover() const { return QColor("#c42b1c"); }
+    QColor errorText() const { return QColor("#ff99a4"); }
+    QColor warningBg() const { return QColor::fromRgbF(0.99f, 0.73f, 0.25f, 0.12f); }
+    QColor warningBorder() const { return QColor::fromRgbF(0.99f, 0.73f, 0.25f, 0.38f); }
 
     QColor textPrimary() const { return white(1.0); }
     QColor textSecondary() const { return white(0.62); }

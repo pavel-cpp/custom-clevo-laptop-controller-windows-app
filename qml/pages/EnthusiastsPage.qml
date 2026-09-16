@@ -5,24 +5,46 @@ Item {
     id: root
     implicitHeight: content.implicitHeight
 
-    property bool touchpadEnabled: true
+    component SecondaryButton: Rectangle {
+        id: button
+        property string text
+        signal clicked()
 
-    readonly property var flags: [
-        ["LoadDefault", "False"], ["PCbeep", "1"], ["OCLoadDefault", "False"],
-        ["EnergyStar15C", "1"], ["BatteryChargeControl", "0"], ["FanSpeedSupport", "True"],
-        ["SupportGamingGroup", "True"], ["Support3dHeadphone", "False"], ["SupportTpColor", "False"],
-        ["CustomFanSupport", "True"], ["WakeUpLanSupport", "False"], ["SupportCheckNotAirplaneOsd", "True"],
-        ["SupportKbBacklight", "True"], ["SupportMaxQ", "False"]
-    ]
+        height: 34
+        radius: Theme.radiusSm
+        color: buttonMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.09)
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.12)
+        opacity: enabled ? 1 : 0.45
 
-    function flagIsNumeric(v) { return v !== "True" && v !== "False" }
-    function flagBg(v) {
-        if (flagIsNumeric(v)) return Qt.rgba(1, 1, 1, 0.10)
-        return v === "True" ? Qt.rgba(0.298, 0.761, 1, 0.18) : Qt.rgba(1, 1, 1, 0.07)
+        Text {
+            anchors.centerIn: parent
+            text: button.text
+            color: Theme.textPrimary
+            font.pixelSize: 13
+            font.family: Theme.fontFamily
+        }
+        MouseArea {
+            id: buttonMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: button.clicked()
+        }
     }
-    function flagFg(v) {
-        if (flagIsNumeric(v)) return "white"
-        return v === "True" ? "#79cfff" : Theme.textMuted
+
+    component PanelTitle: Text {
+        color: Theme.textPrimary
+        font.pixelSize: 15
+        font.weight: Font.DemiBold
+        font.family: Theme.fontFamily
+    }
+
+    component PanelNote: Text {
+        color: Theme.textMuted
+        font.pixelSize: 12
+        font.family: Theme.fontFamily
+        wrapMode: Text.WordWrap
     }
 
     Column {
@@ -57,30 +79,25 @@ Item {
 
                 Rectangle {
                     width: parent.width
-                    height: displayCol.implicitHeight + 36
+                    height: firmwareCol.implicitHeight + 36
                     radius: Theme.radius
                     color: Theme.panelBg
                     border.width: 1
                     border.color: Theme.panelBorder
 
                     Column {
-                        id: displayCol
+                        id: firmwareCol
                         x: 18; y: 18
                         width: parent.width - 36
                         spacing: 12
 
-                        Text {
-                            text: qsTr("Display Mode")
-                            color: Theme.textPrimary
-                            font.pixelSize: 15
-                            font.weight: Font.DemiBold
-                            font.family: Theme.fontFamily
-                        }
+                        PanelTitle { text: qsTr("Firmware") }
+
                         Rectangle {
                             width: parent.width
                             height: 32
                             radius: Theme.radiusSm
-                            color: displayMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : Theme.fieldBg
+                            color: Theme.fieldBg
                             border.width: 1
                             border.color: Theme.fieldBorder
 
@@ -88,61 +105,55 @@ Item {
                                 anchors.left: parent.left
                                 anchors.leftMargin: 10
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "144 Hz · sRGB"
-                                color: Qt.rgba(1, 1, 1, 0.85)
-                                font.pixelSize: 13
+                                text: qsTr("Embedded controller")
+                                color: Theme.textMuted
+                                font.pixelSize: 12
                                 font.family: Theme.fontFamily
                             }
-                            IconChevronDown {
+                            Text {
                                 anchors.right: parent.right
                                 anchors.rightMargin: 10
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 10; height: 6
+                                text: DeviceService.controllerVersion.length > 0 ? DeviceService.controllerVersion : "—"
                                 color: Qt.rgba(1, 1, 1, 0.85)
+                                font.pixelSize: 13
+                                font.family: "Consolas"
                             }
-                            MouseArea {
-                                id: displayMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                            }
+                        }
+
+                        SecondaryButton {
+                            width: parent.width
+                            enabled: DeviceService.available
+                            text: qsTr("Turn Display Off")
+                            onClicked: DeviceService.turnDisplayOff()
                         }
                     }
                 }
 
                 Rectangle {
                     width: parent.width
-                    height: 76
+                    height: touchpadCol.implicitHeight + 36
                     radius: Theme.radius
                     color: Theme.panelBg
                     border.width: 1
                     border.color: Theme.panelBorder
 
-                    Row {
-                        anchors.fill: parent
-                        anchors.margins: 18
-                        Column {
-                            width: parent.width - 40
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
-                            Text {
-                                text: qsTr("TouchPad")
-                                color: Theme.textPrimary
-                                font.pixelSize: 14
-                                font.weight: Font.DemiBold
-                                font.family: Theme.fontFamily
-                            }
-                            Text {
-                                text: qsTr("Enable / disable")
-                                color: Theme.textMuted
-                                font.pixelSize: 12
-                                font.family: Theme.fontFamily
-                            }
+                    Column {
+                        id: touchpadCol
+                        x: 18; y: 18
+                        width: parent.width - 36
+                        spacing: 12
+
+                        PanelTitle { text: qsTr("TouchPad") }
+                        PanelNote {
+                            width: parent.width
+                            text: qsTr("Sends the same shortcut as the touchpad key. Its current state cannot be read back.")
                         }
-                        ToggleSwitch {
-                            anchors.verticalCenter: parent.verticalCenter
-                            checked: root.touchpadEnabled
-                            onToggled: (v) => root.touchpadEnabled = v
+                        SecondaryButton {
+                            width: parent.width
+                            enabled: DeviceService.available
+                            text: qsTr("Toggle TouchPad")
+                            onClicked: DeviceService.toggleTouchpad()
                         }
                     }
                 }
@@ -163,7 +174,7 @@ Item {
 
                         Text {
                             width: parent.width
-                            text: qsTr("Developed experimentally by Boran Software. All responsibility lies with the user.")
+                            text: qsTr("Developed experimentally by Pavel Remdenok. All responsibility lies with the user.")
                             color: Qt.rgba(1, 1, 1, 0.85)
                             font.pixelSize: 13
                             font.family: Theme.fontFamily
@@ -209,12 +220,29 @@ Item {
                     width: parent.width - 36
                     spacing: 14
 
-                    Text {
-                        text: qsTr("Driver Capabilities for Enthusiasts")
-                        color: Theme.textPrimary
-                        font.pixelSize: 15
-                        font.weight: Font.DemiBold
-                        font.family: Theme.fontFamily
+                    Item {
+                        width: parent.width
+                        height: 22
+                        PanelTitle {
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Driver Capabilities")
+                        }
+                        Text {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: DeviceService.available
+                            text: qsTr("%n fan(s)", "", DeviceService.fanCount)
+                            color: Theme.textDim
+                            font.pixelSize: 12
+                            font.family: Theme.fontFamily
+                        }
+                    }
+
+                    PanelNote {
+                        width: parent.width
+                        visible: DeviceService.capabilities.length === 0
+                        text: qsTr("Capabilities are read from the firmware once the driver is available.")
                     }
 
                     Flickable {
@@ -230,7 +258,7 @@ Item {
                             width: parent.width
 
                             Repeater {
-                                model: root.flags
+                                model: DeviceService.capabilities
                                 delegate: Rectangle {
                                     width: flagList.width
                                     height: 36
@@ -249,10 +277,10 @@ Item {
                                         anchors.left: parent.left
                                         anchors.leftMargin: 10
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: modelData[0]
+                                        text: modelData.name
                                         color: Qt.rgba(1, 1, 1, 0.8)
                                         font.pixelSize: 13
-                                        font.family: "Consolas"
+                                        font.family: Theme.fontFamily
                                     }
 
                                     Rectangle {
@@ -262,12 +290,12 @@ Item {
                                         width: badgeText.implicitWidth + 16
                                         height: badgeText.implicitHeight + 4
                                         radius: height / 2
-                                        color: root.flagBg(modelData[1])
+                                        color: modelData.supported ? Qt.rgba(0.298, 0.761, 1, 0.18) : Qt.rgba(1, 1, 1, 0.07)
                                         Text {
                                             id: badgeText
                                             anchors.centerIn: parent
-                                            text: modelData[1]
-                                            color: root.flagFg(modelData[1])
+                                            text: modelData.supported ? qsTr("Yes") : qsTr("No")
+                                            color: modelData.supported ? "#79cfff" : Theme.textMuted
                                             font.pixelSize: 12
                                             font.weight: Font.DemiBold
                                             font.family: Theme.fontFamily

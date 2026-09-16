@@ -10,7 +10,12 @@ Item {
     id: root
 
     property var points: []
+    // Indices of points that are shown but cannot be dragged.
+    property var lockedIndices: []
+    property bool interactive: true
     property int dragIndex: -1
+
+    signal edited()
 
     readonly property real plotLeft: 10
     readonly property real plotTop: 10
@@ -56,6 +61,7 @@ Item {
         next[i].t = t
         next[i].f = f
         root.points = next
+        root.edited()
     }
 
     Rectangle {
@@ -109,11 +115,12 @@ Item {
     Repeater {
         model: root.points
         delegate: Rectangle {
-            width: 16
-            height: 16
-            radius: 8
-            color: "white"
-            border.width: 4
+            readonly property bool draggable: root.interactive && root.lockedIndices.indexOf(index) < 0
+            width: draggable ? 16 : 10
+            height: width
+            radius: width / 2
+            color: draggable ? "white" : Theme.accent
+            border.width: draggable ? 4 : 0
             border.color: Theme.accent
             x: root.px(modelData.t) - width / 2
             y: root.py(modelData.f) - height / 2
@@ -122,12 +129,15 @@ Item {
 
     MouseArea {
         anchors.fill: parent
+        enabled: root.interactive
         cursorShape: root.dragIndex >= 0 ? Qt.ClosedHandCursor : Qt.OpenHandCursor
 
         onPressed: (mouse) => {
             let bestIndex = -1
             let bestDist = 14
             for (let i = 0; i < root.points.length; i++) {
+                if (root.lockedIndices.indexOf(i) >= 0)
+                    continue
                 const dx = mouse.x - root.px(root.points[i].t)
                 const dy = mouse.y - root.py(root.points[i].f)
                 const dist = Math.sqrt(dx * dx + dy * dy)

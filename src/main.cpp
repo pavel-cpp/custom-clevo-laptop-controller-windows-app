@@ -4,8 +4,16 @@
 #include <QQmlContext>
 #include <QQuickWindow>
 
+#include <clevo/Device.hpp>
+
 #include "Theme.h"
 #include "WinChrome.h"
+#include "services/DeviceService.h"
+#include "services/FanService.h"
+#include "services/KeyboardService.h"
+#include "services/PowerService.h"
+
+#include <optional>
 
 int main(int argc, char *argv[])
 {
@@ -16,12 +24,33 @@ int main(int argc, char *argv[])
     app.setApplicationName("Control Center");
     app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/ControlCenter/resources/app_icon.svg")));
 
+    // Without the driver the UI still starts; every service reports itself
+    // unavailable and ignores requests.
+    std::optional<clevo::Device> device;
+    std::optional<clevo::Capabilities> capabilities;
+    QString openError;
+    if (auto opened = clevo::Device::open()) {
+        device = std::move(*opened);
+        capabilities = device->capabilities();
+    } else {
+        openError = QString::fromStdString(opened.error().message);
+    }
+
     WinChrome winChrome;
     Theme theme;
+    DeviceService deviceService(device, capabilities, openError);
+    PowerService powerService(device);
+    KeyboardService keyboardService(device);
+    FanService fanService(device, capabilities);
 
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty("WinChrome", &winChrome);
-    engine.rootContext()->setContextProperty("Theme", &theme);
+    QQmlContext *context = engine.rootContext();
+    context->setContextProperty("WinChrome", &winChrome);
+    context->setContextProperty("Theme", &theme);
+    context->setContextProperty("DeviceService", &deviceService);
+    context->setContextProperty("PowerService", &powerService);
+    context->setContextProperty("KeyboardService", &keyboardService);
+    context->setContextProperty("FanService", &fanService);
 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,

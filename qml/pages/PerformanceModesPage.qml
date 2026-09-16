@@ -5,13 +5,16 @@ Item {
     id: root
     implicitHeight: content.implicitHeight
 
-    property int mode: 1
+    readonly property int mode: PowerService.profile
     readonly property var modeDescriptions: [
         qsTr("Fan speed and processor power stay low; suited to a quiet working environment."),
         qsTr("Performance is sacrificed to reduce battery drain, which extends run time."),
         qsTr("A balanced profile between power, heat and noise for gaming and media."),
         qsTr("CPU and GPU run at their highest power limit; fan noise and heat increase.")
     ]
+    readonly property string currentDescription: mode >= 0
+        ? modeDescriptions[mode]
+        : qsTr("The current profile is unknown. Pick one to apply it.")
 
     Column {
         id: content
@@ -48,7 +51,7 @@ Item {
                 title: qsTr("Silent Mode")
                 subtitle: qsTr("≤ 30 dB · Low fan speed")
                 selected: root.mode === 0
-                onClicked: root.mode = 0
+                onClicked: PowerService.setProfile(0)
                 IconSilent { anchors.centerIn: parent; width: 76; height: 76; color: Theme.accent }
             }
             ModeCard {
@@ -56,7 +59,7 @@ Item {
                 title: qsTr("Power Saver")
                 subtitle: qsTr("Longer battery life")
                 selected: root.mode === 1
-                onClicked: root.mode = 1
+                onClicked: PowerService.setProfile(1)
                 IconPowerSaver { anchors.centerIn: parent; width: 80; height: 80; color: Theme.accent }
             }
             ModeCard {
@@ -64,7 +67,7 @@ Item {
                 title: qsTr("Entertainment Mode")
                 subtitle: qsTr("Balanced gaming profile")
                 selected: root.mode === 2
-                onClicked: root.mode = 2
+                onClicked: PowerService.setProfile(2)
                 IconEntertainment { anchors.centerIn: parent; width: 84; height: 84; color: Theme.accent }
             }
             ModeCard {
@@ -72,7 +75,7 @@ Item {
                 title: qsTr("Full Performance")
                 subtitle: qsTr("Maximum power limit")
                 selected: root.mode === 3
-                onClicked: root.mode = 3
+                onClicked: PowerService.setProfile(3)
                 IconFullPerformance { anchors.centerIn: parent; width: 84; height: 84; color: Theme.accent }
             }
         }
@@ -102,7 +105,7 @@ Item {
                 }
                 Text {
                     width: parent.width
-                    text: root.modeDescriptions[root.mode]
+                    text: root.currentDescription
                     color: Theme.textDim
                     font.pixelSize: 13
                     font.family: Theme.fontFamily

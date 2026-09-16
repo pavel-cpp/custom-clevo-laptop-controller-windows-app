@@ -1,14 +1,18 @@
 import QtQuick
 import ControlCenter
 
+// Controlled slider: `moved` reports every drag position, `released` the
+// final one; the owner feeds the accepted value back through `value`.
 Item {
     id: root
     height: 18
+    opacity: enabled ? 1 : 0.45
 
     property real from: 0
     property real to: 1
     property real value: 0
     signal moved(real value)
+    signal released(real value)
 
     readonly property real ratio: (to > from) ? Math.max(0, Math.min(1, (value - from) / (to - from))) : 0
 
@@ -43,14 +47,13 @@ Item {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
 
-        function apply(mx) {
+        function valueAt(mx) {
             const p = Math.max(0, Math.min(1, mx / track.width))
-            const v = root.from + p * (root.to - root.from)
-            root.value = v
-            root.moved(v)
+            return root.from + p * (root.to - root.from)
         }
 
-        onPressed: (mouse) => apply(mouse.x)
-        onPositionChanged: (mouse) => { if (pressed) apply(mouse.x) }
+        onPressed: (mouse) => root.moved(valueAt(mouse.x))
+        onPositionChanged: (mouse) => { if (pressed) root.moved(valueAt(mouse.x)) }
+        onReleased: (mouse) => root.released(valueAt(mouse.x))
     }
 }
