@@ -22,6 +22,8 @@ qt_add_executable(ControlCenter WIN32
         src/Theme.h
         src/TrayController.h
         src/TrayController.cpp
+        src/HotkeyController.h
+        src/HotkeyController.cpp
         src/services/ServiceSupport.h
         src/services/DeviceService.h
         src/services/DeviceService.cpp

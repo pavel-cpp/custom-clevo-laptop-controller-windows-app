@@ -58,17 +58,6 @@ void TrayController::showWindow()
     m_window->requestActivate();
 }
 
-void TrayController::notifyHidden()
-{
-    if (!m_available || m_hiddenNoticeShown)
-        return;
-
-    m_hiddenNoticeShown = true;
-    m_icon.showMessage(QApplication::applicationName(),
-                       tr("Control Center keeps running in the notification area."),
-                       QSystemTrayIcon::Information, 4000);
-}
-
 void TrayController::syncProfileChecks()
 {
     const QList<QAction *> actions = m_profiles.actions();

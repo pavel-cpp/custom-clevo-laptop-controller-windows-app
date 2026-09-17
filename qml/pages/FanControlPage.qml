@@ -272,7 +272,7 @@ Item {
 
         Rectangle {
             width: parent.width
-            height: 52
+            height: 62
             radius: Theme.radius
             color: Qt.rgba(1, 1, 1, 0.04)
             border.width: 1
@@ -284,17 +284,26 @@ Item {
                 anchors.rightMargin: 18
                 spacing: 16
 
-                Text {
-                    width: 64
+                Column {
+                    width: 190
                     anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Offset")
-                    color: Theme.textPrimary
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                    font.family: Theme.fontFamily
+                    spacing: 2
+                    Text {
+                        text: qsTr("Speed offset")
+                        color: Theme.textPrimary
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        font.family: Theme.fontFamily
+                    }
+                    Text {
+                        text: qsTr("Added on top of the active curve")
+                        color: Theme.textMuted
+                        font.pixelSize: 11
+                        font.family: Theme.fontFamily
+                    }
                 }
                 GradientSlider {
-                    width: parent.width - 64 - 40 - 32
+                    width: parent.width - 190 - 40 - 32
                     anchors.verticalCenter: parent.verticalCenter
                     from: 0; to: 100
                     value: root.offsetDraft

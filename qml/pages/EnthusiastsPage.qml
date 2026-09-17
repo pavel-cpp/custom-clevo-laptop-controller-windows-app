@@ -127,6 +127,12 @@ Item {
                             text: qsTr("Turn Display Off")
                             onClicked: DeviceService.turnDisplayOff()
                         }
+                        PanelNote {
+                            width: parent.width
+                            text: Hotkeys.displayOffRegistered
+                                ? qsTr("Also available system-wide as %1 while the app runs.").arg(Hotkeys.displayOffShortcut)
+                                : qsTr("The %1 shortcut is taken by another application.").arg(Hotkeys.displayOffShortcut)
+                        }
                     }
                 }
 

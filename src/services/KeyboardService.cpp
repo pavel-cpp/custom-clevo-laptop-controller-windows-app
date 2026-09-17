@@ -73,7 +73,13 @@ KeyboardService::KeyboardService(const std::optional<clevo::Device> &device, QOb
     m_sleepSeconds = state.sleepTimeout ? static_cast<int>(state.sleepTimeout->count()) : 0;
 }
 
-KeyboardService::~KeyboardService() = default;
+KeyboardService::~KeyboardService()
+{
+    // Give the keyboard its sleep timer back before the app exits.
+    if (m_player)
+        m_player->stop();
+    restoreSleepTimer();
+}
 
 QStringList KeyboardService::effectNames() const
 {
@@ -193,6 +199,18 @@ QString KeyboardService::applySleepTimer(bool enabled, int seconds)
         return services::unavailableText();
 
     const bool turnOn = enabled && seconds > 0;
+    if (turnOn && isSoftwareEffect(m_activeEffect)) {
+        // The timer switches the backlight off while the effect keeps
+        // writing frames, which makes the keyboard flicker. Only one of the
+        // two can be active.
+        m_suspendedSleep.reset();
+        stopSoftwareEffect();
+        setActiveEffect(-1);
+        m_colorPending = true;
+        m_brightnessPending = true;
+        flushWrites();
+    }
+
     const clevo::Status status = m_keyboard->setSleepTimeout(
         turnOn ? std::optional<std::chrono::seconds>(seconds) : std::nullopt);
     if (!status)
@@ -220,6 +238,8 @@ void KeyboardService::setActiveEffect(int index)
 
 void KeyboardService::startSoftwareEffect()
 {
+    suspendSleepTimer();
+
     clevo::SoftwareEffect effect;
     if (m_activeEffect == SoftwareBreathing)
         effect = clevo::breathingEffect(toRgb(m_color), 3000ms);
@@ -238,6 +258,32 @@ void KeyboardService::stopSoftwareEffect()
     if (m_player)
         m_player->stop();
     m_restartPending = false;
+    restoreSleepTimer();
+}
+
+void KeyboardService::suspendSleepTimer()
+{
+    if (!m_sleepEnabled || m_suspendedSleep)
+        return;
+
+    m_suspendedSleep = std::chrono::seconds(m_sleepSeconds);
+    m_keyboard->setSleepTimeout(std::nullopt);
+    m_sleepEnabled = false;
+    emit sleepTimerChanged();
+}
+
+void KeyboardService::restoreSleepTimer()
+{
+    if (!m_suspendedSleep)
+        return;
+
+    const auto timeout = *m_suspendedSleep;
+    m_suspendedSleep.reset();
+    if (m_keyboard->setSleepTimeout(timeout)) {
+        m_sleepEnabled = true;
+        m_sleepSeconds = static_cast<int>(timeout.count());
+    }
+    emit sleepTimerChanged();
 }
 
 void KeyboardService::scheduleWrite()

@@ -24,15 +24,12 @@ public:
 
 public slots:
     void showWindow();
-    // Tells the user once per session where the window went.
-    void notifyHidden();
 
 private:
     void syncProfileChecks();
 
     PowerService *m_power;
     bool m_available;
-    bool m_hiddenNoticeShown = false;
     QPointer<QWindow> m_window;
     QActionGroup m_profiles{nullptr};
     // Declared before the icon, which must be destroyed first.

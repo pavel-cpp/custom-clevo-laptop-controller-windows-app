@@ -27,7 +27,6 @@ Window {
         if (Tray.available) {
             close.accepted = false
             root.hide()
-            Tray.notifyHidden()
         }
     }
 

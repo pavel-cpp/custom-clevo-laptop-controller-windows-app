@@ -408,7 +408,7 @@ Item {
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: qsTr("Active")
+                            text: KeyboardService.sleepSuspended ? qsTr("Paused by effect") : qsTr("Active")
                             color: Theme.textDim
                             font.pixelSize: 12
                             font.family: Theme.fontFamily
@@ -491,7 +491,9 @@ Item {
 
                     Text {
                         width: parent.width
-                        text: qsTr("Keyboard backlight turns off after the set delay and comes back on the next keypress.")
+                        text: KeyboardService.sleepSuspended
+                            ? qsTr("The timer is paused while a software effect runs, otherwise the backlight would flicker. It returns when the effect stops.")
+                            : qsTr("Keyboard backlight turns off after the set delay and comes back on the next keypress.")
                         color: Theme.textMuted
                         font.pixelSize: 12
                         font.family: Theme.fontFamily

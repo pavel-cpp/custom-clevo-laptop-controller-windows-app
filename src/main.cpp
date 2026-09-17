@@ -6,6 +6,7 @@
 
 #include <clevo/Device.hpp>
 
+#include "HotkeyController.h"
 #include "Theme.h"
 #include "TrayController.h"
 #include "WinChrome.h"
@@ -47,6 +48,11 @@ int main(int argc, char *argv[])
     KeyboardService keyboardService(device);
     FanService fanService(device, capabilities);
 
+    HotkeyController hotkeys;
+    app.installNativeEventFilter(&hotkeys);
+    QObject::connect(&hotkeys, &HotkeyController::displayOffRequested, &deviceService,
+                     &DeviceService::turnDisplayOff);
+
     TrayController tray(&powerService);
     // With a tray icon, closing the window only hides it.
     app.setQuitOnLastWindowClosed(!tray.available());
@@ -56,6 +62,7 @@ int main(int argc, char *argv[])
     context->setContextProperty("WinChrome", &winChrome);
     context->setContextProperty("Theme", &theme);
     context->setContextProperty("Tray", &tray);
+    context->setContextProperty("Hotkeys", &hotkeys);
     context->setContextProperty("DeviceService", &deviceService);
     context->setContextProperty("PowerService", &powerService);
     context->setContextProperty("KeyboardService", &keyboardService);
@@ -67,8 +74,11 @@ int main(int argc, char *argv[])
 
     engine.loadFromModule("ControlCenter", "Main");
 
-    if (!engine.rootObjects().isEmpty())
-        tray.setWindow(qobject_cast<QWindow *>(engine.rootObjects().constFirst()));
+    if (!engine.rootObjects().isEmpty()) {
+        auto *window = qobject_cast<QWindow *>(engine.rootObjects().constFirst());
+        tray.setWindow(window);
+        hotkeys.registerShortcuts(window);
+    }
 
     return app.exec();
 }

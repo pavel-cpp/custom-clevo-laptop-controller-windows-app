@@ -26,6 +26,7 @@ class KeyboardService : public QObject
     Q_PROPERTY(int activeEffect READ activeEffect NOTIFY activeEffectChanged)
     Q_PROPERTY(bool sleepEnabled READ sleepEnabled NOTIFY sleepTimerChanged)
     Q_PROPERTY(int sleepSeconds READ sleepSeconds NOTIFY sleepTimerChanged)
+    Q_PROPERTY(bool sleepSuspended READ sleepSuspended NOTIFY sleepTimerChanged)
     Q_PROPERTY(int maxSleepSeconds READ maxSleepSeconds CONSTANT)
 
 public:
@@ -41,6 +42,8 @@ public:
     int activeEffect() const { return m_activeEffect; }
     bool sleepEnabled() const { return m_sleepEnabled; }
     int sleepSeconds() const { return m_sleepSeconds; }
+    // True while a software effect holds the sleep timer off.
+    bool sleepSuspended() const { return m_suspendedSleep.has_value(); }
     int maxSleepSeconds() const;
 
 public slots:
@@ -70,6 +73,8 @@ private:
     void setActiveEffect(int index);
     void startSoftwareEffect();
     void stopSoftwareEffect();
+    void suspendSleepTimer();
+    void restoreSleepTimer();
     void scheduleWrite();
     void flushWrites();
 
@@ -84,6 +89,7 @@ private:
     int m_activeEffect = -1;
     bool m_sleepEnabled = false;
     int m_sleepSeconds = 0;
+    std::optional<std::chrono::seconds> m_suspendedSleep;
 
     bool m_colorPending = false;
     bool m_brightnessPending = false;
