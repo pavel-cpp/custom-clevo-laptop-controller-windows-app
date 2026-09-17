@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Window
-import QtQuick.Controls
+// Basic, not the native Windows style: only Basic controls can be restyled.
+import QtQuick.Controls.Basic
 import ControlCenter
 
 Window {
@@ -14,7 +15,21 @@ Window {
     color: "transparent"
     flags: Qt.Window | Qt.FramelessWindowHint
 
-    Component.onCompleted: WinChrome.applyAcrylicEffect(root)
+    readonly property bool maximized: visibility === Window.Maximized
+    // `screen` is read so the inset follows DPI changes between monitors.
+    readonly property real frameInset: maximized && screen ? WinChrome.maximizedInset(root) : 0
+
+    Component.onCompleted: WinChrome.attach(root)
+
+    // Closing keeps the app running in the notification area; it exits from
+    // the tray menu or the Quit Application button.
+    onClosing: (close) => {
+        if (Tray.available) {
+            close.accepted = false
+            root.hide()
+            Tray.notifyHidden()
+        }
+    }
 
     QtObject {
         id: appState
@@ -24,9 +39,10 @@ Window {
     Rectangle {
         id: card
         anchors.fill: parent
-        radius: root.visibility === Window.Maximized ? 0 : 10
+        anchors.margins: root.frameInset
+        radius: root.maximized ? 0 : 10
         color: Theme.windowFill
-        border.width: root.visibility === Window.Maximized ? 0 : 1
+        border.width: root.maximized ? 0 : 1
         border.color: Qt.rgba(1, 1, 1, 0.09)
         clip: true
 
@@ -65,9 +81,7 @@ Window {
                 contentWidth: width
                 contentHeight: pagesContainer.height + 26 + 36
 
-                ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AsNeeded
-                }
+                ScrollBar.vertical: AcrylicScrollBar {}
 
                 Item {
                     id: pagesContainer

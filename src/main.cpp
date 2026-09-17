@@ -1,4 +1,4 @@
-#include <QGuiApplication>
+#include <QApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -7,6 +7,7 @@
 #include <clevo/Device.hpp>
 
 #include "Theme.h"
+#include "TrayController.h"
 #include "WinChrome.h"
 #include "services/DeviceService.h"
 #include "services/FanService.h"
@@ -19,8 +20,9 @@ int main(int argc, char *argv[])
 {
     QQuickWindow::setDefaultAlphaBuffer(true);
 
-    QGuiApplication app(argc, argv);
-    app.setOrganizationName("Boran Software");
+    // QApplication rather than QGuiApplication: the tray icon lives in Qt Widgets.
+    QApplication app(argc, argv);
+    app.setOrganizationName("Pavel Remdenok");
     app.setApplicationName("Control Center");
     app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/ControlCenter/resources/app_icon.svg")));
 
@@ -37,16 +39,23 @@ int main(int argc, char *argv[])
     }
 
     WinChrome winChrome;
+    app.installNativeEventFilter(&winChrome);
+
     Theme theme;
     DeviceService deviceService(device, capabilities, openError);
     PowerService powerService(device);
     KeyboardService keyboardService(device);
     FanService fanService(device, capabilities);
 
+    TrayController tray(&powerService);
+    // With a tray icon, closing the window only hides it.
+    app.setQuitOnLastWindowClosed(!tray.available());
+
     QQmlApplicationEngine engine;
     QQmlContext *context = engine.rootContext();
     context->setContextProperty("WinChrome", &winChrome);
     context->setContextProperty("Theme", &theme);
+    context->setContextProperty("Tray", &tray);
     context->setContextProperty("DeviceService", &deviceService);
     context->setContextProperty("PowerService", &powerService);
     context->setContextProperty("KeyboardService", &keyboardService);
@@ -57,6 +66,9 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
 
     engine.loadFromModule("ControlCenter", "Main");
+
+    if (!engine.rootObjects().isEmpty())
+        tray.setWindow(qobject_cast<QWindow *>(engine.rootObjects().constFirst()));
 
     return app.exec();
 }

@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Svg)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickControls2 Svg)
 
 qt_standard_project_setup(REQUIRES 6.5)
 
@@ -20,6 +20,8 @@ qt_add_executable(ControlCenter WIN32
         src/WinChrome.h
         src/WinChrome.cpp
         src/Theme.h
+        src/TrayController.h
+        src/TrayController.cpp
         src/services/ServiceSupport.h
         src/services/DeviceService.h
         src/services/DeviceService.cpp
@@ -57,6 +59,7 @@ qt_add_qml_module(ControlCenter
         qml/components/FanCurveChart.qml
         qml/components/ResizeBorders.qml
         qml/components/NumberField.qml
+        qml/components/AcrylicScrollBar.qml
         qml/components/icons/IconPerformance.qml
         qml/components/icons/IconKeyboard.qml
         qml/components/icons/IconFan.qml
@@ -78,6 +81,7 @@ target_link_libraries(ControlCenter
     PRIVATE
         Qt6::Core
         Qt6::Gui
+        Qt6::Widgets
         Qt6::Qml
         Qt6::Quick
         Qt6::QuickControls2

@@ -56,6 +56,10 @@ struct WindowCompositionAttributeData {
 
 using SetWindowCompositionAttributeFn = BOOL(WINAPI *)(HWND, WindowCompositionAttributeData *);
 
+// Qt creates frameless windows as WS_POPUP. Snap, maximize-by-drag and the
+// minimize/restore animations are only offered to windows with these styles.
+constexpr LONG_PTR FramedStyle = WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+
 SetWindowCompositionAttributeFn setWindowCompositionAttribute()
 {
     static SetWindowCompositionAttributeFn fn = []() -> SetWindowCompositionAttributeFn {
@@ -91,6 +95,11 @@ bool applyAcrylicBlur(HWND hwnd)
     return setAttribute(hwnd, &data);
 }
 
+HWND handleOf(QQuickWindow *window)
+{
+    return window ? reinterpret_cast<HWND>(window->winId()) : nullptr;
+}
+
 } // namespace
 #endif
 
@@ -99,15 +108,23 @@ WinChrome::WinChrome(QObject *parent)
 {
 }
 
-void WinChrome::applyAcrylicEffect(QQuickWindow *window)
+void WinChrome::attach(QQuickWindow *window)
 {
-    if (!window)
+    if (!window || m_windows.contains(window))
         return;
 
 #ifdef Q_OS_WIN
-    const HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    const HWND hwnd = handleOf(window);
     if (!hwnd)
         return;
+
+    m_windows.append(window);
+    connect(window, &QObject::destroyed, this, [this, window] { m_windows.removeAll(window); });
+    // Qt may rebuild the style when the window is shown again from the tray.
+    connect(window, &QWindow::visibleChanged, this, [this, window](bool visible) {
+        if (visible)
+            applyFrameStyle(window);
+    });
 
     const BOOL dark = TRUE;
     DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
@@ -125,6 +142,69 @@ void WinChrome::applyAcrylicEffect(QQuickWindow *window)
         const MARGINS margins{-1, -1, -1, -1};
         DwmExtendFrameIntoClientArea(hwnd, &margins);
     }
+
+    applyFrameStyle(window);
+#endif
+}
+
+qreal WinChrome::maximizedInset(QQuickWindow *window) const
+{
+#ifdef Q_OS_WIN
+    const HWND hwnd = handleOf(window);
+    if (!hwnd)
+        return 0;
+
+    const UINT dpi = GetDpiForWindow(hwnd);
+    const int frame = GetSystemMetricsForDpi(SM_CXSIZEFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+    return frame / window->devicePixelRatio();
+#else
+    Q_UNUSED(window);
+    return 0;
+#endif
+}
+
+bool WinChrome::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result)
+{
+#ifdef Q_OS_WIN
+    if (eventType != "windows_generic_MSG")
+        return false;
+
+    const auto *msg = static_cast<MSG *>(message);
+    if (msg->message != WM_NCCALCSIZE)
+        return false;
+
+    for (QQuickWindow *window : std::as_const(m_windows)) {
+        if (handleOf(window) == msg->hwnd) {
+            // Returning 0 without touching the proposed rectangle makes the
+            // whole window client area: the frame keeps its behaviour but
+            // draws nothing, and Qt's geometry matches what is rendered.
+            *result = 0;
+            return true;
+        }
+    }
+#else
+    Q_UNUSED(eventType);
+    Q_UNUSED(message);
+    Q_UNUSED(result);
+#endif
+    return false;
+}
+
+void WinChrome::applyFrameStyle(QQuickWindow *window) const
+{
+#ifdef Q_OS_WIN
+    const HWND hwnd = handleOf(window);
+    if (!hwnd)
+        return;
+
+    const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    const LONG_PTR framed = (style & ~static_cast<LONG_PTR>(WS_POPUP)) | FramedStyle;
+    if (framed == style)
+        return;
+
+    SetWindowLongPtrW(hwnd, GWL_STYLE, framed);
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                 SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
 #else
     Q_UNUSED(window);
 #endif

@@ -26,12 +26,6 @@ DeviceService::DeviceService(const std::optional<clevo::Device> &device,
     }
 }
 
-void DeviceService::toggleTouchpad()
-{
-    if (m_system)
-        m_system->toggleTouchpad();
-}
-
 void DeviceService::turnDisplayOff()
 {
     if (m_system)

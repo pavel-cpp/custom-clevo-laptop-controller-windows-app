@@ -132,34 +132,6 @@ Item {
 
                 Rectangle {
                     width: parent.width
-                    height: touchpadCol.implicitHeight + 36
-                    radius: Theme.radius
-                    color: Theme.panelBg
-                    border.width: 1
-                    border.color: Theme.panelBorder
-
-                    Column {
-                        id: touchpadCol
-                        x: 18; y: 18
-                        width: parent.width - 36
-                        spacing: 12
-
-                        PanelTitle { text: qsTr("TouchPad") }
-                        PanelNote {
-                            width: parent.width
-                            text: qsTr("Sends the same shortcut as the touchpad key. Its current state cannot be read back.")
-                        }
-                        SecondaryButton {
-                            width: parent.width
-                            enabled: DeviceService.available
-                            text: qsTr("Toggle TouchPad")
-                            onClicked: DeviceService.toggleTouchpad()
-                        }
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
                     height: warnCol.implicitHeight + 36
                     radius: Theme.radius
                     color: Qt.rgba(0.298, 0.761, 1, 0.12)

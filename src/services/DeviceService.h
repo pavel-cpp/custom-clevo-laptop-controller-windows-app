@@ -30,7 +30,6 @@ public:
     QVariantList capabilities() const { return m_capabilities; }
 
 public slots:
-    void toggleTouchpad();
     void turnDisplayOff();
 
 private:
