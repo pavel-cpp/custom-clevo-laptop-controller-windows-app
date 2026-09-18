@@ -7,13 +7,21 @@
 #include <QObject>
 #include <QStringList>
 #include <QTimer>
+#include <QVariantAnimation>
 
+#include <atomic>
 #include <memory>
 #include <optional>
 
 // Keyboard backlight. Effects are addressed by their index in `effectNames`:
 // the firmware effects come first, followed by the software ones the app
 // animates itself.
+//
+// The sleep timer has two implementations. Normally the firmware runs it.
+// While a software effect plays, the firmware timer is handed over to the
+// app instead: the effect would keep waking the backlight up, so the app
+// watches how long the machine has been idle and fades the effect out
+// itself after the same delay.
 class KeyboardService : public QObject
 {
     Q_OBJECT
@@ -26,7 +34,8 @@ class KeyboardService : public QObject
     Q_PROPERTY(int activeEffect READ activeEffect NOTIFY activeEffectChanged)
     Q_PROPERTY(bool sleepEnabled READ sleepEnabled NOTIFY sleepTimerChanged)
     Q_PROPERTY(int sleepSeconds READ sleepSeconds NOTIFY sleepTimerChanged)
-    Q_PROPERTY(bool sleepSuspended READ sleepSuspended NOTIFY sleepTimerChanged)
+    // True while the app, rather than the firmware, runs the sleep timer.
+    Q_PROPERTY(bool sleepHandledByApp READ sleepHandledByApp NOTIFY sleepTimerChanged)
     Q_PROPERTY(int maxSleepSeconds READ maxSleepSeconds CONSTANT)
 
 public:
@@ -42,8 +51,7 @@ public:
     int activeEffect() const { return m_activeEffect; }
     bool sleepEnabled() const { return m_sleepEnabled; }
     int sleepSeconds() const { return m_sleepSeconds; }
-    // True while a software effect holds the sleep timer off.
-    bool sleepSuspended() const { return m_suspendedSleep.has_value(); }
+    bool sleepHandledByApp() const { return isSoftwareEffect(m_activeEffect); }
     int maxSleepSeconds() const;
 
 public slots:
@@ -73,8 +81,15 @@ private:
     void setActiveEffect(int index);
     void startSoftwareEffect();
     void stopSoftwareEffect();
-    void suspendSleepTimer();
-    void restoreSleepTimer();
+    [[nodiscard]] clevo::SoftwareEffect currentSoftwareEffect() const;
+
+    // Sleep timer
+    void setFirmwareTimer(bool active);
+    void updateIdleWatch();
+    void checkIdleTime();
+    void fadeBacklight(int target);
+    void storeSleepSettings() const;
+
     void scheduleWrite();
     void flushWrites();
 
@@ -89,7 +104,14 @@ private:
     int m_activeEffect = -1;
     bool m_sleepEnabled = false;
     int m_sleepSeconds = 0;
-    std::optional<std::chrono::seconds> m_suspendedSleep;
+
+    // Sleep timer state
+    bool m_firmwareTimerActive = false;
+    bool m_backlightAsleep = false;
+    QTimer m_idleTimer;
+    QVariantAnimation m_fadeAnimation;
+    // Read by the effect player's thread, written by the fade animation.
+    std::shared_ptr<std::atomic<int>> m_fadeLevel = std::make_shared<std::atomic<int>>(255);
 
     bool m_colorPending = false;
     bool m_brightnessPending = false;

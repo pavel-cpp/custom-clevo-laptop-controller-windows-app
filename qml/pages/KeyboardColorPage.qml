@@ -408,7 +408,7 @@ Item {
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: KeyboardService.sleepSuspended ? qsTr("Paused by effect") : qsTr("Active")
+                            text: KeyboardService.sleepHandledByApp ? qsTr("Active (run by the app)") : qsTr("Active")
                             color: Theme.textDim
                             font.pixelSize: 12
                             font.family: Theme.fontFamily
@@ -491,8 +491,8 @@ Item {
 
                     Text {
                         width: parent.width
-                        text: KeyboardService.sleepSuspended
-                            ? qsTr("The timer is paused while a software effect runs, otherwise the backlight would flicker. It returns when the effect stops.")
+                        text: KeyboardService.sleepHandledByApp
+                            ? qsTr("While a software effect runs, the app dims the backlight itself after the same delay - the firmware timer would make the effect flicker. It fades back in on the next keypress or mouse move.")
                             : qsTr("Keyboard backlight turns off after the set delay and comes back on the next keypress.")
                         color: Theme.textMuted
                         font.pixelSize: 12

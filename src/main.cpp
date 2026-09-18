@@ -7,6 +7,7 @@
 
 #include <clevo/Device.hpp>
 
+#include "AutostartService.h"
 #include "Theme.h"
 #include "TrayController.h"
 #include "WinChrome.h"
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
     app.installNativeEventFilter(&winChrome);
 
     Theme theme;
+    AutostartService autostart;
     DeviceService deviceService(device, capabilities, openError);
     PowerService powerService(device);
     KeyboardService keyboardService(device);
@@ -65,6 +67,7 @@ int main(int argc, char *argv[])
     context->setContextProperty("WinChrome", &winChrome);
     context->setContextProperty("Theme", &theme);
     context->setContextProperty("Tray", &tray);
+    context->setContextProperty("Autostart", &autostart);
     context->setContextProperty("DeviceService", &deviceService);
     context->setContextProperty("PowerService", &powerService);
     context->setContextProperty("KeyboardService", &keyboardService);

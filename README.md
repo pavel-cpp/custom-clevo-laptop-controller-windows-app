@@ -55,8 +55,10 @@ firmware is really doing, and it can also be switched straight from the tray men
 - **Firmware effects**: Random, Breathing, Cycle, Wave, Dance, Tempo, Flash.
 - **Software effects** rendered by the app: Breathing, Colour Cycle, Colourful Breathing.
 - **Boot effect** toggle and a **sleep timer** that switches the backlight off after a chosen delay.
-- The sleep timer pauses automatically while a software effect runs, so the keyboard never flickers, and
-  the last software effect is restored the next time the app starts.
+- While a software effect runs the app takes the sleep timer over from the firmware and fades the backlight
+  out itself after the same delay, so the keyboard dims smoothly instead of flickering, and fades back in on
+  the next keypress.
+- The last software effect is remembered and switched back on the next time the app starts.
 
 ### Firmware insight
 The "For Enthusiasts" page reports the **embedded controller version** and the full list of
@@ -65,7 +67,7 @@ support and more — so you can see what your particular model actually supports
 
 ### Interface
 Frameless Windows 11 window with **acrylic blur**, rounded corners, Snap and maximize-by-drag, a tray icon
-with a quick profile switcher, and `--tray` to start hidden.
+with a quick profile switcher, an autostart toggle, and `--tray` to start hidden.
 
 ---
 
@@ -97,10 +99,9 @@ ControlCenter.exe --tray
 
 ### Start with Windows
 
-```powershell
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v ControlCenter /f ^
-  /d "\"C:\path\to\ControlCenter.exe\" --tray"
-```
+Turn on **Startup** on the *For Enthusiasts* page. The app registers itself for the current user only — no
+administrator rights, nothing written outside your account — and starts minimised to the tray with your last
+keyboard effect restored. Move or reinstall the app and the entry repairs itself on the next launch.
 
 ---
 

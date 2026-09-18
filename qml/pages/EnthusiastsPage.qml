@@ -126,6 +126,46 @@ Item {
 
                 Rectangle {
                     width: parent.width
+                    height: startupCol.implicitHeight + 36
+                    radius: Theme.radius
+                    color: Theme.panelBg
+                    border.width: 1
+                    border.color: Theme.panelBorder
+
+                    Column {
+                        id: startupCol
+                        x: 18; y: 18
+                        width: parent.width - 36
+                        spacing: 12
+
+                        PanelTitle { text: qsTr("Startup") }
+
+                        Row {
+                            spacing: 10
+                            ToggleSwitch {
+                                enabled: Autostart.supported
+                                checked: Autostart.enabled
+                                onToggled: (v) => Autostart.setEnabled(v)
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Autostart.enabled ? qsTr("Launches with Windows") : qsTr("Off")
+                                color: Theme.textDim
+                                font.pixelSize: 12
+                                font.family: Theme.fontFamily
+                            }
+                        }
+
+                        PanelNote {
+                            width: parent.width
+                            text: qsTr("Starts minimised to the notification area when you sign in and restores your last keyboard effect. Only the current user account is affected.")
+                            lineHeight: 1.5
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
                     height: warnCol.implicitHeight + 36
                     radius: Theme.radius
                     color: Qt.rgba(0.298, 0.761, 1, 0.12)
