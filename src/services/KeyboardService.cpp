@@ -2,6 +2,8 @@
 
 #include "ServiceSupport.h"
 
+#include <QSettings>
+
 #include <array>
 #include <chrono>
 
@@ -22,6 +24,10 @@ const int SoftwareColorfulBreathing = FirstSoftwareEffect + 2;
 const int EffectCount = FirstSoftwareEffect + 3;
 
 constexpr auto CoalesceInterval = 40ms;
+
+// Firmware effects survive a reboot on their own; software ones only exist
+// while the app runs, so the last one is remembered here.
+constexpr auto SoftwareEffectKey = "keyboard/softwareEffect";
 
 clevo::Rgb toRgb(const QColor &color)
 {
@@ -71,6 +77,12 @@ KeyboardService::KeyboardService(const std::optional<clevo::Device> &device, QOb
     m_activeEffect = indexOf(state.effect);
     m_sleepEnabled = state.sleepTimeout.has_value();
     m_sleepSeconds = state.sleepTimeout ? static_cast<int>(state.sleepTimeout->count()) : 0;
+
+    const int lastSoftwareEffect = QSettings().value(SoftwareEffectKey, -1).toInt();
+    if (isSoftwareEffect(lastSoftwareEffect)) {
+        m_activeEffect = lastSoftwareEffect;
+        startSoftwareEffect();
+    }
 }
 
 KeyboardService::~KeyboardService()
@@ -233,6 +245,7 @@ void KeyboardService::setActiveEffect(int index)
     if (index == m_activeEffect)
         return;
     m_activeEffect = index;
+    QSettings().setValue(SoftwareEffectKey, isSoftwareEffect(index) ? index : -1);
     emit activeEffectChanged();
 }
 

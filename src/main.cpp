@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QCommandLineParser>
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -6,7 +7,6 @@
 
 #include <clevo/Device.hpp>
 
-#include "HotkeyController.h"
 #include "Theme.h"
 #include "TrayController.h"
 #include "WinChrome.h"
@@ -26,6 +26,14 @@ int main(int argc, char *argv[])
     app.setOrganizationName("Pavel Remdenok");
     app.setApplicationName("Control Center");
     app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/ControlCenter/resources/app_icon.svg")));
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription(QCoreApplication::translate("main", "Clevo laptop control center"));
+    parser.addHelpOption();
+    const QCommandLineOption trayOption({QStringLiteral("t"), QStringLiteral("tray")},
+                                        QCoreApplication::translate("main", "Start hidden in the notification area."));
+    parser.addOption(trayOption);
+    parser.process(app);
 
     // Without the driver the UI still starts; every service reports itself
     // unavailable and ignores requests.
@@ -48,12 +56,7 @@ int main(int argc, char *argv[])
     KeyboardService keyboardService(device);
     FanService fanService(device, capabilities);
 
-    HotkeyController hotkeys;
-    app.installNativeEventFilter(&hotkeys);
-    QObject::connect(&hotkeys, &HotkeyController::displayOffRequested, &deviceService,
-                     &DeviceService::turnDisplayOff);
-
-    TrayController tray(&powerService);
+    TrayController tray(&powerService, parser.isSet(trayOption));
     // With a tray icon, closing the window only hides it.
     app.setQuitOnLastWindowClosed(!tray.available());
 
@@ -62,7 +65,6 @@ int main(int argc, char *argv[])
     context->setContextProperty("WinChrome", &winChrome);
     context->setContextProperty("Theme", &theme);
     context->setContextProperty("Tray", &tray);
-    context->setContextProperty("Hotkeys", &hotkeys);
     context->setContextProperty("DeviceService", &deviceService);
     context->setContextProperty("PowerService", &powerService);
     context->setContextProperty("KeyboardService", &keyboardService);
@@ -74,11 +76,8 @@ int main(int argc, char *argv[])
 
     engine.loadFromModule("ControlCenter", "Main");
 
-    if (!engine.rootObjects().isEmpty()) {
-        auto *window = qobject_cast<QWindow *>(engine.rootObjects().constFirst());
-        tray.setWindow(window);
-        hotkeys.registerShortcuts(window);
-    }
+    if (!engine.rootObjects().isEmpty())
+        tray.setWindow(qobject_cast<QWindow *>(engine.rootObjects().constFirst()));
 
     return app.exec();
 }

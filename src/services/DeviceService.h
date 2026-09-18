@@ -29,9 +29,6 @@ public:
     int fanCount() const { return m_fanCount; }
     QVariantList capabilities() const { return m_capabilities; }
 
-public slots:
-    void turnDisplayOff();
-
 private:
     std::optional<clevo::SystemController> m_system;
     QString m_errorMessage;

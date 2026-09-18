@@ -5,10 +5,11 @@
 #include <QApplication>
 #include <QIcon>
 
-TrayController::TrayController(PowerService *power, QObject *parent)
+TrayController::TrayController(PowerService *power, bool startHidden, QObject *parent)
     : QObject(parent)
     , m_power(power)
     , m_available(QSystemTrayIcon::isSystemTrayAvailable())
+    , m_startHidden(startHidden)
 {
     if (!m_available)
         return;

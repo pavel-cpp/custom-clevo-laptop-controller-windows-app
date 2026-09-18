@@ -10,7 +10,8 @@ Window {
     height: 760
     minimumWidth: 960
     minimumHeight: 600
-    visible: true
+    // --tray keeps the window hidden until it is opened from the tray.
+    visible: !Tray.startHidden
     title: qsTr("Control Center")
     color: "transparent"
     flags: Qt.Window | Qt.FramelessWindowHint

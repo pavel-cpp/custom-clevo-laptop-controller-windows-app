@@ -26,8 +26,3 @@ DeviceService::DeviceService(const std::optional<clevo::Device> &device,
     }
 }
 
-void DeviceService::turnDisplayOff()
-{
-    if (m_system)
-        m_system->turnDisplayOff();
-}
