@@ -4,7 +4,7 @@ A modern, open-source replacement for Clevo's Control Center. It controls **fan 
 backlight** and **power profiles** on Clevo-based laptops from a single Windows 11 style window, and stays
 out of the way in the notification area.
 
-Clevo builds the barebones behind many brands, so this also applies to laptops sold as **Schenker / XMG,
+Clevo builds the barebones behind many brands, so this also applies to laptops sold as **Machenike, Schenker / XMG,
 Eluktronics, Tuxedo, Sager, Hasee, Mechrevo, Monster Abra, Metabox, PC Specialist** and other Clevo or
 Tongfang rebrands.
 
