@@ -1,0 +1,3 @@
+[submodule "external/clevo-community-sdk"]
+	path = external/clevo-community-sdk
+	url = git@github.com:pavel-cpp/clevo-community-sdk.git
