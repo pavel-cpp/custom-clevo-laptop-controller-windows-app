@@ -170,6 +170,9 @@ combinations never reach Windows, so no application can bind them.
 Not affiliated with, endorsed by, or supported by Clevo or Insyde. It drives the embedded controller of your
 laptop directly: use it at your own risk.
 
+<p align="center"><i>…although, Clevo, if you're reading this: <b>hire me!</b> 👋<br>
+I already rewrote your Control Center for free.</i></p>
+
 ---
 
 ## License
