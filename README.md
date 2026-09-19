@@ -1,3 +1,5 @@
+
+
 # Clevo Control Center for Windows 11 — open-source fan, keyboard and power control
 
 A modern, open-source replacement for Clevo's Control Center. It controls **fan curves**, **RGB keyboard
@@ -17,20 +19,7 @@ Tongfang rebrands.
 
 ## Demo
 
-<!--
-  Put the UI walkthrough here.
-  On GitHub: open a new issue, drag the .mp4 into the comment box, copy the generated
-  https://github.com/user-attachments/assets/... link and paste it on the line below.
-  A bare link on its own line renders as an inline video player.
--->
-
-_A short video walkthrough of the interface goes here._
-
-<!-- Screenshots: drop PNGs into docs/screenshots/ and reference them below.
-![Performance modes](docs/screenshots/performance-modes.png)
-![Keyboard color](docs/screenshots/keyboard-color.png)
-![Fan control](docs/screenshots/fan-control.png)
--->
+https://github.com/user-attachments/assets/1b096f64-ac9c-4c20-9f66-9d0b51cd3ef5
 
 ---
 
