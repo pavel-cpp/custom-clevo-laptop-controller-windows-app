@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(ControlCenter VERSION 1.0.0 LANGUAGES CXX)
+project(ControlCenter VERSION 1.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -33,6 +33,8 @@ qt_add_executable(ControlCenter WIN32
         src/services/PowerService.cpp
         src/services/KeyboardService.h
         src/services/KeyboardService.cpp
+        src/services/KeyboardActivity.h
+        src/services/KeyboardActivity.cpp
         src/services/FanService.h
         src/services/FanService.cpp
 )

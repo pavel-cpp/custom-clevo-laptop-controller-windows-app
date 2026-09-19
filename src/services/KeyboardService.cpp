@@ -4,10 +4,6 @@
 
 #include <QSettings>
 
-#ifdef Q_OS_WIN
-#include <windows.h>
-#endif
-
 #include <array>
 #include <chrono>
 #include <utility>
@@ -66,21 +62,6 @@ clevo::SoftwareEffect scaled(clevo::SoftwareEffect effect, int brightness,
     };
 }
 
-// Seconds since the last keyboard or mouse input anywhere on the system.
-int systemIdleSeconds()
-{
-#ifdef Q_OS_WIN
-    LASTINPUTINFO info{sizeof(LASTINPUTINFO), 0};
-    if (!GetLastInputInfo(&info))
-        return 0;
-    // Unsigned arithmetic, so the 49-day tick wrap takes care of itself.
-    const DWORD idleMilliseconds = GetTickCount() - info.dwTime;
-    return static_cast<int>(idleMilliseconds / 1000);
-#else
-    return 0;
-#endif
-}
-
 } // namespace
 
 KeyboardService::KeyboardService(const std::optional<clevo::Device> &device, QObject *parent)
@@ -121,6 +102,7 @@ KeyboardService::KeyboardService(const std::optional<clevo::Device> &device, QOb
     m_sleepEnabled = state.sleepTimeout.has_value();
     m_sleepSeconds = state.sleepTimeout ? static_cast<int>(state.sleepTimeout->count()) : 0;
     m_firmwareTimerActive = m_sleepEnabled;
+    m_firmwareTimerSeconds = m_sleepSeconds;
 
     const QSettings settings;
     const int lastSoftwareEffect = settings.value(SoftwareEffectKey, -1).toInt();
@@ -142,12 +124,24 @@ KeyboardService::~KeyboardService()
 
     m_fadeAnimation.stop();
     m_idleTimer.stop();
+    m_keyboardActivity.stop();
+    m_writeTimer.stop();
     if (m_player)
         m_player->stop();
 
-    // Leave the keyboard lit and the firmware timer back in charge.
-    if (m_backlightAsleep)
+    if (isSoftwareEffect(m_activeEffect)) {
+        // A software effect leaves behind whatever frame it drew last, dimmed
+        // or mid-cycle. Put back the colour and brightness the user picked, as
+        // the keyboard would be without the app. The effect itself stays
+        // remembered and resumes on the next start.
+        m_keyboard->setColor(toRgb(m_color));
         m_keyboard->setBrightness(services::toByte(m_brightness));
+    } else {
+        // A colour or brightness change may still be waiting to be written.
+        flushWrites();
+    }
+
+    // Hand the sleep timer back to the firmware.
     setFirmwareTimer(m_sleepEnabled);
 }
 
@@ -339,6 +333,7 @@ void KeyboardService::stopSoftwareEffect()
 {
     m_fadeAnimation.stop();
     m_idleTimer.stop();
+    m_keyboardActivity.stop();
     m_restartPending = false;
 
     if (m_player)
@@ -360,22 +355,28 @@ void KeyboardService::setFirmwareTimer(bool active)
         return;
 
     active = active && m_sleepSeconds > 0;
-    if (active == m_firmwareTimerActive)
+    // A new delay on a timer that is already running has to reach the
+    // firmware as well, not just switching it on or off.
+    if (active == m_firmwareTimerActive && (!active || m_sleepSeconds == m_firmwareTimerSeconds))
         return;
 
     const clevo::Status status = m_keyboard->setSleepTimeout(
         active ? std::optional<std::chrono::seconds>(m_sleepSeconds) : std::nullopt);
-    if (status)
+    if (status) {
         m_firmwareTimerActive = active;
+        m_firmwareTimerSeconds = m_sleepSeconds;
+    }
 }
 
 void KeyboardService::updateIdleWatch()
 {
     const bool watching = isSoftwareEffect(m_activeEffect) && m_sleepEnabled && m_sleepSeconds > 0;
     if (watching) {
+        m_keyboardActivity.start();
         m_idleTimer.start();
     } else {
         m_idleTimer.stop();
+        m_keyboardActivity.stop();
         if (m_backlightAsleep) {
             m_backlightAsleep = false;
             m_player->play(scaled(currentSoftwareEffect(), m_brightness, m_fadeLevel));
@@ -386,7 +387,9 @@ void KeyboardService::updateIdleWatch()
 
 void KeyboardService::checkIdleTime()
 {
-    const int idleSeconds = systemIdleSeconds();
+    // Keyboard only, like the firmware timer: moving the mouse neither keeps
+    // the backlight on nor wakes it up.
+    const int idleSeconds = m_keyboardActivity.idleSeconds();
 
     if (!m_backlightAsleep && idleSeconds >= m_sleepSeconds) {
         m_backlightAsleep = true;

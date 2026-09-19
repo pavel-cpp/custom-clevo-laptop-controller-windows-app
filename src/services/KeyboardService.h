@@ -1,5 +1,7 @@
 #pragma once
 
+#include "KeyboardActivity.h"
+
 #include <clevo/Device.hpp>
 #include <clevo/LightingEffects.hpp>
 
@@ -107,8 +109,10 @@ private:
 
     // Sleep timer state
     bool m_firmwareTimerActive = false;
+    int m_firmwareTimerSeconds = 0;
     bool m_backlightAsleep = false;
     QTimer m_idleTimer;
+    KeyboardActivity m_keyboardActivity;
     QVariantAnimation m_fadeAnimation;
     // Read by the effect player's thread, written by the fade animation.
     std::shared_ptr<std::atomic<int>> m_fadeLevel = std::make_shared<std::atomic<int>>(255);
