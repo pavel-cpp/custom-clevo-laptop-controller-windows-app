@@ -24,6 +24,8 @@ qt_add_executable(ControlCenter WIN32
         src/TrayController.cpp
         src/AutostartService.h
         src/AutostartService.cpp
+        src/SingleInstance.h
+        src/SingleInstance.cpp
         src/services/ServiceSupport.h
         src/services/DeviceService.h
         src/services/DeviceService.cpp
