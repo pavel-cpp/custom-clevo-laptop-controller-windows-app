@@ -125,12 +125,23 @@ KeyboardService::~KeyboardService()
     m_fadeAnimation.stop();
     m_idleTimer.stop();
     m_keyboardActivity.stop();
+    m_writeTimer.stop();
     if (m_player)
         m_player->stop();
 
-    // Leave the keyboard lit and the firmware timer back in charge.
-    if (m_backlightAsleep)
+    if (isSoftwareEffect(m_activeEffect)) {
+        // A software effect leaves behind whatever frame it drew last, dimmed
+        // or mid-cycle. Put back the colour and brightness the user picked, as
+        // the keyboard would be without the app. The effect itself stays
+        // remembered and resumes on the next start.
+        m_keyboard->setColor(toRgb(m_color));
         m_keyboard->setBrightness(services::toByte(m_brightness));
+    } else {
+        // A colour or brightness change may still be waiting to be written.
+        flushWrites();
+    }
+
+    // Hand the sleep timer back to the firmware.
     setFirmwareTimer(m_sleepEnabled);
 }
 
