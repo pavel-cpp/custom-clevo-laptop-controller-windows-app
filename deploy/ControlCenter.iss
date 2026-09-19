@@ -11,7 +11,7 @@
 
 ; Overridden from the command line with /D<name>=<value>.
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.0.1"
 #endif
 ; The Windows version resource only accepts numbers, so a version like
 ; "1.1.0-rc1" is trimmed to its numeric part before it gets here.
