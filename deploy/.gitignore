@@ -1,0 +1,3 @@
+# Build artefacts produced by build-installer.ps1
+staging/
+out/

@@ -125,6 +125,19 @@ cmake --build build
 The build copies the Qt runtime and the vendor driver library next to the executable, so `build\ControlCenter.exe`
 runs straight away.
 
+### Build the installer
+
+With [Inno Setup](https://jrsoftware.org/isinfo.php) installed:
+
+```powershell
+deploy\build-installer.bat
+```
+
+It picks up your build directory, packages exactly what the build deployed next to the executable and writes
+`deploy\out\ControlCenter-<version>-win64-setup.exe`. Qt, the compiler and the version are read out of the
+build's CMake cache, so there is nothing to configure. See [`deploy/README.md`](deploy/README.md) for the
+options and for what the installer puts where.
+
 ---
 
 ## How it works
